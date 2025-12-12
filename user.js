@@ -22,10 +22,20 @@ function validateAlphabetsOnly(input, errorId) {
 function validateNumbersOnly(input, errorId) {
     const errorEl = document.getElementById(errorId);
     const value = input.value;
-    const isValid = /^[0-9]*$/.test(value);
     
-    if (!isValid && value) {
+    // Check if contains only numbers
+    const isNumeric = /^[0-9]*$/.test(value);
+    
+    // Check if exactly 10 digits when filled
+    const isValidLength = value.length === 0 || value.length === 10;
+    
+    if (!isNumeric) {
         input.classList.add('error');
+        errorEl.textContent = 'Please enter numbers only';
+        errorEl.classList.add('show');
+    } else if (value.length > 0 && value.length !== 10) {
+        input.classList.add('error');
+        errorEl.textContent = 'Phone number must be exactly 10 digits';
         errorEl.classList.add('show');
     } else {
         input.classList.remove('error');
@@ -71,7 +81,8 @@ function checkFormValidity() {
     const form = document.getElementById('problemForm');
     const submitBtn = document.getElementById('submitBtn');
     const nameValid = !document.getElementById('reporterName').classList.contains('error');
-    const contactValid = !document.getElementById('reporterContact').classList.contains('error');
+    const contactInput = document.getElementById('reporterContact');
+    const contactValid = !contactInput.classList.contains('error') && contactInput.value.length === 10;
     const photoValid = document.getElementById('photoFile').dataset.gpsValid === 'true';
     const allFilled = form.checkValidity();
     
@@ -112,26 +123,41 @@ function submitGrievance(e) {
     document.getElementById('photoFile').dataset.gpsValid = 'false';
     document.getElementById('submitBtn').disabled = true;
     
+    // Update both public and admin views
     updateStats();
     renderProblems();
+    
+    // Update admin dashboard if logged in
+    const currentAdmin = getCurrentAdmin();
+    if (currentAdmin) {
+        updateAdminStats();
+        renderAdminProblems();
+    }
 }
 
 // Render Public Grievances
 function renderProblems() {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const authorityFilter = document.getElementById('authorityFilter').value;
+    const statusFilter = document.getElementById('statusFilter');
+    const authorityFilter = document.getElementById('authorityFilter');
+    
+    if (!statusFilter || !authorityFilter) return;
+    
+    const statusValue = statusFilter.value;
+    const authorityValue = authorityFilter.value;
     
     let filtered = getProblems();
     
-    if (statusFilter !== 'all') {
-        filtered = filtered.filter(p => p.status === statusFilter);
+    if (statusValue !== 'all') {
+        filtered = filtered.filter(p => p.status === statusValue);
     }
     
-    if (authorityFilter !== 'all') {
-        filtered = filtered.filter(p => p.authority === authorityFilter);
+    if (authorityValue !== 'all') {
+        filtered = filtered.filter(p => p.authority === authorityValue);
     }
     
     const container = document.getElementById('problemsList');
+    
+    if (!container) return;
     
     if (filtered.length === 0) {
         container.innerHTML = '<div class="no-data">No grievances match the selected filters.</div>';
@@ -174,19 +200,40 @@ function upvoteProblem(id) {
 
 // Event Listeners Setup
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('reporterName').addEventListener('input', function(e) {
-        validateAlphabetsOnly(e.target, 'reporterNameError');
-});
-document.getElementById('reporterContact').addEventListener('input', function(e) {
-        validateNumbersOnly(e.target, 'reporterContactError');
-    });
+    const reporterName = document.getElementById('reporterName');
+    const reporterContact = document.getElementById('reporterContact');
+    const photoFile = document.getElementById('photoFile');
+    const problemForm = document.getElementById('problemForm');
+    const statusFilter = document.getElementById('statusFilter');
+    const authorityFilter = document.getElementById('authorityFilter');
+    
+    if (reporterName) {
+        reporterName.addEventListener('input', function(e) {
+            validateAlphabetsOnly(e.target, 'reporterNameError');
+        });
+    }
 
-    document.getElementById('photoFile').addEventListener('change', function(e) {
-        validateGPSImage(e.target);
-    });
+    if (reporterContact) {
+        reporterContact.addEventListener('input', function(e) {
+            validateNumbersOnly(e.target, 'reporterContactError');
+        });
+    }
 
-    document.getElementById('problemForm').addEventListener('submit', submitGrievance);
+    if (photoFile) {
+        photoFile.addEventListener('change', function(e) {
+            validateGPSImage(e.target);
+        });
+    }
 
-    document.getElementById('statusFilter').addEventListener('change', renderProblems);
-    document.getElementById('authorityFilter').addEventListener('change', renderProblems);
+    if (problemForm) {
+        problemForm.addEventListener('submit', submitGrievance);
+    }
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', renderProblems);
+    }
+    
+    if (authorityFilter) {
+        authorityFilter.addEventListener('change', renderProblems);
+    }
 });

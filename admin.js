@@ -11,8 +11,11 @@ function loadAdminDashboard() {
     }
     
     const dept = currentAdmin.activeDepartment;
-    document.getElementById('adminWelcome').textContent = `${dept} Dashboard`;
-    document.getElementById('adminDeptInfo').textContent = `Manage grievances assigned to ${dept}`;
+    const welcomeEl = document.getElementById('adminWelcome');
+    const deptInfoEl = document.getElementById('adminDeptInfo');
+    
+    if (welcomeEl) welcomeEl.textContent = `${dept} Dashboard`;
+    if (deptInfoEl) deptInfoEl.textContent = `Manage grievances assigned to ${dept}`;
     
     updateAdminStats();
     renderAdminProblems();
@@ -27,10 +30,15 @@ function updateAdminStats() {
     const problems = getProblems();
     const deptProblems = problems.filter(p => p.authority === dept);
     
-    document.getElementById('adminTotal').textContent = deptProblems.length;
-    document.getElementById('adminPending').textContent = deptProblems.filter(p => p.status === 'Pending').length;
-    document.getElementById('adminProgress').textContent = deptProblems.filter(p => p.status === 'In Progress').length;
-    document.getElementById('adminResolved').textContent = deptProblems.filter(p => p.status === 'Resolved').length;
+    const adminTotal = document.getElementById('adminTotal');
+    const adminPending = document.getElementById('adminPending');
+    const adminProgress = document.getElementById('adminProgress');
+    const adminResolved = document.getElementById('adminResolved');
+    
+    if (adminTotal) adminTotal.textContent = deptProblems.length;
+    if (adminPending) adminPending.textContent = deptProblems.filter(p => p.status === 'Pending').length;
+    if (adminProgress) adminProgress.textContent = deptProblems.filter(p => p.status === 'In Progress').length;
+    if (adminResolved) adminResolved.textContent = deptProblems.filter(p => p.status === 'Resolved').length;
 }
 
 // Render Admin Grievances
@@ -39,7 +47,11 @@ function renderAdminProblems() {
     if (!currentAdmin) return;
     
     const dept = currentAdmin.activeDepartment;
-    const statusFilter = document.getElementById('adminStatusFilter').value;
+    const statusFilterEl = document.getElementById('adminStatusFilter');
+    
+    if (!statusFilterEl) return;
+    
+    const statusFilter = statusFilterEl.value;
     const problems = getProblems();
     
     let filtered = problems.filter(p => p.authority === dept);
@@ -49,6 +61,8 @@ function renderAdminProblems() {
     }
     
     const container = document.getElementById('adminProblemsList');
+    
+    if (!container) return;
     
     if (filtered.length === 0) {
         container.innerHTML = '<div class="no-data">No grievances match the selected filters.</div>';
@@ -135,6 +149,9 @@ function addNote(id) {
     if (!currentAdmin) return;
     
     const textarea = document.getElementById(`note-${id}`);
+    
+    if (!textarea) return;
+    
     const noteText = textarea.value.trim();
     
     if (!noteText) {
@@ -162,5 +179,9 @@ function addNote(id) {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('adminStatusFilter').addEventListener('change', renderAdminProblems);
+    const adminStatusFilter = document.getElementById('adminStatusFilter');
+    
+    if (adminStatusFilter) {
+        adminStatusFilter.addEventListener('change', renderAdminProblems);
+    }
 });

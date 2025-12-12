@@ -1,34 +1,119 @@
 // ============================================
-// MODULE 4: REPORT & DATA MANAGEMENT MODULE
+// MODULE 4: REPORT & DATA MANAGEMENT MODULE (FIREBASE VERSION)
 // ============================================
 
-// CLEAR ANY EXISTING DATA ON FIRST LOAD
-if (!sessionStorage.getItem('portalInitialized')) {
-    localStorage.removeItem('problems');
-    sessionStorage.setItem('portalInitialized', 'true');
+// Firebase references
+let problemsRef;
+let adminsRef;
+
+// Initialize Firebase references after DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof firebase !== 'undefined') {
+        problemsRef = firebase.database().ref('problems');
+        adminsRef = firebase.database().ref('admins');
+        
+        // Initialize default admin if not exists
+        adminsRef.once('value').then(snapshot => {
+            if (!snapshot.exists()) {
+                const defaultAdmin = {
+                    username: 'admin',
+                    password: 'admin123',
+                    department: 'All',
+                    email: 'admin@gov.in'
+                };
+                adminsRef.push(defaultAdmin);
+            }
+        });
+        
+        // Listen for real-time updates
+        problemsRef.on('value', (snapshot) => {
+            updateStats();
+            renderProblems();
+            
+            const currentAdmin = getCurrentAdmin();
+            if (currentAdmin) {
+                updateAdminStats();
+                renderAdminProblems();
+            }
+        });
+        
+        initializeApp();
+    }
+});
+
+// Data Storage Functions (Firebase version)
+function getProblems() {
+    return new Promise((resolve) => {
+        if (!problemsRef) {
+            resolve([]);
+            return;
+        }
+        
+        problemsRef.once('value').then((snapshot) => {
+            const problems = [];
+            snapshot.forEach((childSnapshot) => {
+                const problem = childSnapshot.val();
+                problem.firebaseId = childSnapshot.key;
+                problems.push(problem);
+            });
+            resolve(problems);
+        });
+    });
 }
 
-// Data Storage Functions
-function getProblems() {
-    const problems = localStorage.getItem('problems');
-    if (!problems) {
-        // Return empty array - NO DEMO DATA
-        return [];
-    }
-    return JSON.parse(problems);
+function saveProblems(problems) {
+    if (!problemsRef) return Promise.resolve();
+    
+    // Clear existing data
+    return problemsRef.remove().then(() => {
+        // Save all problems
+        const updates = {};
+        problems.forEach(problem => {
+            const key = problem.firebaseId || problemsRef.push().key;
+            updates[key] = problem;
+        });
+        return problemsRef.update(updates);
+    });
+}
+
+function addProblem(problem) {
+    if (!problemsRef) return Promise.resolve();
+    
+    return problemsRef.push(problem);
+}
+
+function updateProblem(firebaseId, updates) {
+    if (!problemsRef) return Promise.resolve();
+    
+    return problemsRef.child(firebaseId).update(updates);
 }
 
 function getAdmins() {
-    const admins = JSON.parse(localStorage.getItem('admins'));
-    if (!admins) {
-        // Initialize with default admin
-        const defaultAdmins = [
-            { username: 'admin', password: 'admin123', department: 'All', email: 'admin@gov.in' }
-        ];
-        localStorage.setItem('admins', JSON.stringify(defaultAdmins));
-        return defaultAdmins;
-    }
-    return admins;
+    return new Promise((resolve) => {
+        if (!adminsRef) {
+            resolve([{ username: 'admin', password: 'admin123', department: 'All', email: 'admin@gov.in' }]);
+            return;
+        }
+        
+        adminsRef.once('value').then((snapshot) => {
+            const admins = [];
+            snapshot.forEach((childSnapshot) => {
+                admins.push(childSnapshot.val());
+            });
+            
+            if (admins.length === 0) {
+                admins.push({ username: 'admin', password: 'admin123', department: 'All', email: 'admin@gov.in' });
+            }
+            
+            resolve(admins);
+        });
+    });
+}
+
+function addAdmin(admin) {
+    if (!adminsRef) return Promise.resolve();
+    
+    return adminsRef.push(admin);
 }
 
 function getCurrentAdmin() {
@@ -36,13 +121,18 @@ function getCurrentAdmin() {
 }
 
 // Statistics Functions
-function updateStats() {
-    const problems = getProblems();
+async function updateStats() {
+    const problems = await getProblems();
     
-    document.getElementById('totalProblems').textContent = problems.length;
-    document.getElementById('pendingProblems').textContent = problems.filter(p => p.status === 'Pending').length;
-    document.getElementById('progressProblems').textContent = problems.filter(p => p.status === 'In Progress').length;
-    document.getElementById('resolvedProblems').textContent = problems.filter(p => p.status === 'Resolved').length;
+    const totalEl = document.getElementById('totalProblems');
+    const pendingEl = document.getElementById('pendingProblems');
+    const progressEl = document.getElementById('progressProblems');
+    const resolvedEl = document.getElementById('resolvedProblems');
+    
+    if (totalEl) totalEl.textContent = problems.length;
+    if (pendingEl) pendingEl.textContent = problems.filter(p => p.status === 'Pending').length;
+    if (progressEl) progressEl.textContent = problems.filter(p => p.status === 'In Progress').length;
+    if (resolvedEl) resolvedEl.textContent = problems.filter(p => p.status === 'Resolved').length;
 }
 
 // Page Navigation
@@ -51,14 +141,16 @@ function showPage(page) {
     const navBtns = document.querySelectorAll('.nav-btn');
     
     pages.forEach(p => {
-        document.getElementById(`${p}Page`).classList.remove('active');
+        const pageEl = document.getElementById(`${p}Page`);
+        if (pageEl) pageEl.classList.remove('active');
     });
     
     navBtns.forEach(btn => btn.classList.remove('active'));
     
     if (page === 'public') {
-        document.getElementById('publicPage').classList.add('active');
-        navBtns[0].classList.add('active');
+        const publicPage = document.getElementById('publicPage');
+        if (publicPage) publicPage.classList.add('active');
+        if (navBtns[0]) navBtns[0].classList.add('active');
         updateStats();
         renderProblems();
     } else if (page === 'admin') {
@@ -67,11 +159,13 @@ function showPage(page) {
             showPage('auth');
             return;
         }
-        document.getElementById('adminPage').classList.add('active');
+        const adminPage = document.getElementById('adminPage');
+        if (adminPage) adminPage.classList.add('active');
         loadAdminDashboard();
     } else if (page === 'auth') {
-        document.getElementById('authPage').classList.add('active');
-        navBtns[1].classList.add('active');
+        const authPage = document.getElementById('authPage');
+        if (authPage) authPage.classList.add('active');
+        if (navBtns[1]) navBtns[1].classList.add('active');
     }
 }
 
@@ -87,14 +181,9 @@ function initializeApp() {
     renderProblems();
 }
 
-// Run on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
-
-// Generate Reports (Optional Feature)
-function generateReport(type) {
-    const problems = getProblems();
+// Generate Reports
+async function generateReport(type) {
+    const problems = await getProblems();
     
     let reportData = {
         generatedOn: new Date().toLocaleString(),
@@ -105,7 +194,6 @@ function generateReport(type) {
         byDepartment: {}
     };
     
-    // Group by department
     problems.forEach(p => {
         if (!reportData.byDepartment[p.authority]) {
             reportData.byDepartment[p.authority] = {
@@ -124,10 +212,11 @@ function generateReport(type) {
     return reportData;
 }
 
-// Export Data Functions
-function exportToJSON() {
+// Export Functions
+async function exportToJSON() {
+    const problems = await getProblems();
     const data = {
-        problems: getProblems(),
+        problems: problems,
         exportDate: new Date().toISOString()
     };
     
@@ -140,8 +229,8 @@ function exportToJSON() {
     link.click();
 }
 
-function exportToCSV() {
-    const problems = getProblems();
+async function exportToCSV() {
+    const problems = await getProblems();
     
     const headers = ['ID', 'Title', 'Description', 'Location', 'Department', 'Status', 'Reporter', 'Contact', 'Date', 'Votes'];
     const rows = problems.map(p => [
@@ -169,127 +258,16 @@ function exportToCSV() {
     link.click();
 }
 
-// Analytics Functions
-function getAnalytics() {
-    const problems = getProblems();
-    
-    return {
-        averageResolutionTime: calculateAverageResolutionTime(problems),
-        mostActiveReporter: getMostActiveReporter(problems),
-        departmentPerformance: getDepartmentPerformance(problems),
-        trendingIssues: getTrendingIssues(problems)
-    };
-}
-
-function calculateAverageResolutionTime(problems) {
-    const resolved = problems.filter(p => p.status === 'Resolved');
-    return resolved.length > 0 ? `${Math.floor(Math.random() * 10) + 1} days` : 'N/A';
-}
-
-function getMostActiveReporter(problems) {
-    if (problems.length === 0) return 'N/A';
-    
-    const reporterCounts = {};
-    problems.forEach(p => {
-        reporterCounts[p.reporterName] = (reporterCounts[p.reporterName] || 0) + 1;
-    });
-    
-    const topReporter = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1])[0];
-    return topReporter ? `${topReporter[0]} (${topReporter[1]} grievances)` : 'N/A';
-}
-
-function getDepartmentPerformance(problems) {
-    if (problems.length === 0) return {};
-    
-    const deptStats = {};
-    
-    problems.forEach(p => {
-        if (!deptStats[p.authority]) {
-            deptStats[p.authority] = { total: 0, resolved: 0 };
-        }
-        deptStats[p.authority].total++;
-        if (p.status === 'Resolved') deptStats[p.authority].resolved++;
-    });
-    
-    const performance = {};
-    Object.keys(deptStats).forEach(dept => {
-        const rate = deptStats[dept].total > 0 
-            ? Math.round((deptStats[dept].resolved / deptStats[dept].total) * 100) 
-            : 0;
-        performance[dept] = `${rate}% resolved`;
-    });
-    
-    return performance;
-}
-
-function getTrendingIssues(problems) {
-    if (problems.length === 0) return [];
-    
-    const sorted = problems.sort((a, b) => b.votes - a.votes);
-    return sorted.slice(0, 5).map(p => ({
-        title: p.title,
-        votes: p.votes,
-        department: p.authority
-    }));
-}
-
-// Clear All Data (Admin Function)
+// Clear All Data
 function clearAllData() {
     if (confirm('Are you sure you want to clear ALL data? This cannot be undone.')) {
-        if (confirm('This will delete all grievances and admin accounts except the default admin. Continue?')) {
-            localStorage.removeItem('problems');
-            localStorage.removeItem('admins');
-            sessionStorage.removeItem('currentAdmin');
-            sessionStorage.removeItem('portalInitialized');
-            
-            // Reinitialize with default admin
-            getAdmins();
-            
-            alert('All data has been cleared successfully.');
-            window.location.reload();
+        if (confirm('This will delete all grievances. Continue?')) {
+            if (problemsRef) {
+                problemsRef.remove().then(() => {
+                    alert('All data has been cleared successfully.');
+                    window.location.reload();
+                });
+            }
         }
     }
-}
-
-// Backup and Restore Functions
-function backupData() {
-    const backup = {
-        problems: getProblems(),
-        admins: getAdmins(),
-        backupDate: new Date().toISOString()
-    };
-    
-    const dataStr = JSON.stringify(backup, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
-    link.download = `grievance_backup_${Date.now()}.json`;
-    link.click();
-    
-    alert('Backup created successfully!');
-}
-
-function restoreData(file) {
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        try {
-            const backup = JSON.parse(e.target.result);
-            
-            if (backup.problems && backup.admins) {
-                localStorage.setItem('problems', JSON.stringify(backup.problems));
-                localStorage.setItem('admins', JSON.stringify(backup.admins));
-                
-                alert('Data restored successfully!');
-                window.location.reload();
-            } else {
-                alert('Invalid backup file format.');
-            }
-        } catch (error) {
-            alert('Error reading backup file: ' + error.message);
-        }
-    };
-    
-    reader.readAsText(file);
 }

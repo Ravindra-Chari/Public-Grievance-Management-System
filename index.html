@@ -360,10 +360,31 @@
         </div>
     </main>
 
-    <!-- Load JavaScript Modules -->
-    <script src="login.js"></script>
-    <script src="user.js"></script>
-    <script src="admin.js"></script>
-    <script src="report.js"></script>
+   <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<!-- Firebase Configuration -->
+<script>
+// Replace with YOUR Firebase config from Firebase Console
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+</script>
+
+<!-- Load JavaScript Modules in CORRECT ORDER -->
+<script src="report.js"></script>
+<script src="user.js"></script>
+<script src="admin.js"></script>
+<script src="login.js"></script>
 </body>
 </html>
