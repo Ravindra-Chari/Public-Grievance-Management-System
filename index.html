@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Grievance Portal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="header-brand">
+                    <div class="gov-logo">GOV</div>
+                    <div>
+                        <h1 class="header-title">Public Grievance Portal</h1>
+                        <p class="header-subtitle">Government of [State/District] - Citizen Services Portal</p>
+                    </div>
+                </div>
+                <nav class="nav-buttons">
+                    <button class="nav-btn active" onclick="showPage('public')">Public Portal</button>
+                    <button class="nav-btn" onclick="showPage('auth')" id="loginBtn">Admin Access</button>
+                    <span id="adminInfo" class="admin-info" style="display: none;"></span>
+                    <button class="nav-btn" onclick="logout()" id="logoutBtn" style="display: none;">Logout</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <div class="container">
+            <!-- MODULE 1: LOGIN MODULE -->
+            <div id="authPage" class="page-section">
+                <div class="auth-container">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="auth-tabs">
+                                <button class="auth-tab active" onclick="showAuthTab('login')">Department Login</button>
+                                <button class="auth-tab" onclick="showAuthTab('register')">New Registration</button>
+                            </div>
+
+                            <!-- Login Form -->
+                            <div id="loginTab">
+                                <div style="text-align: center; margin-bottom: 2rem;">
+                                    <h2 style="color: #2c3e50; margin-bottom: 0.5rem;">Department Access Portal</h2>
+                                    <p style="color: #6c757d;">Secure login for authorized department personnel</p>
+                                </div>
+                                
+                                <div id="loginError" class="alert alert-danger" style="display: none;"></div>
+
+                                <div class="dept-grid" id="loginDepartmentCards">
+                                    <div class="dept-card" onclick="selectLoginDepartment('Municipal Corporation')">
+                                        <div class="dept-icon">🏢</div>
+                                        <div class="dept-name">Municipal Corporation</div>
+                                        <div class="dept-desc">Roads, sanitation, infrastructure</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectLoginDepartment('Police Department')">
+                                        <div class="dept-icon">👮</div>
+                                        <div class="dept-name">Police Department</div>
+                                        <div class="dept-desc">Law enforcement, security</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectLoginDepartment('Water Department')">
+                                        <div class="dept-icon">💧</div>
+                                        <div class="dept-name">Water Supply Department</div>
+                                        <div class="dept-desc">Water supply, drainage</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectLoginDepartment('Electricity Board')">
+                                        <div class="dept-icon">⚡</div>
+                                        <div class="dept-name">Electricity Board</div>
+                                        <div class="dept-desc">Power supply, outages</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectLoginDepartment('Transport Department')">
+                                        <div class="dept-icon">🚌</div>
+                                        <div class="dept-name">Transport Department</div>
+                                        <div class="dept-desc">Public transport, traffic</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectLoginDepartment('Health Department')">
+                                        <div class="dept-icon">🏥</div>
+                                        <div class="dept-name">Health Department</div>
+                                        <div class="dept-desc">Healthcare, sanitation</div>
+                                    </div>
+                                </div>
+
+                                <form id="loginForm">
+                                    <input type="hidden" id="loginDepartment">
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label" for="loginUsername">Username <span class="required">*</span></label>
+                                        <input type="text" id="loginUsername" class="form-control" placeholder="Enter your username" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="loginPassword">Password <span class="required">*</span></label>
+                                        <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary btn-block">Login to Dashboard</button>
+                                </form>
+
+                                <div class="demo-credentials">
+                                    <strong>Demo Credentials:</strong><br>
+                                    Username: <code>admin</code> | Password: <code>admin123</code><br>
+                                    <small>Can be used with any department</small>
+                                </div>
+                            </div>
+
+                            <!-- Register Form -->
+                            <div id="registerTab" style="display: none;">
+                                <div style="text-align: center; margin-bottom: 2rem;">
+                                    <h2 style="color: #2c3e50; margin-bottom: 0.5rem;">Department Registration</h2>
+                                    <p style="color: #6c757d;">Register new department administrator account</p>
+                                </div>
+
+                                <div id="registerSuccess" class="alert alert-success" style="display: none;"></div>
+                                <div id="registerError" class="alert alert-danger" style="display: none;"></div>
+
+                                <div class="dept-grid" id="registerDepartmentCards">
+                                    <div class="dept-card" onclick="selectRegisterDepartment('Municipal Corporation')">
+                                        <div class="dept-icon">🏢</div>
+                                        <div class="dept-name">Municipal Corporation</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectRegisterDepartment('Police Department')">
+                                        <div class="dept-icon">👮</div>
+                                        <div class="dept-name">Police Department</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectRegisterDepartment('Water Department')">
+                                        <div class="dept-icon">💧</div>
+                                        <div class="dept-name">Water Supply Department</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectRegisterDepartment('Electricity Board')">
+                                        <div class="dept-icon">⚡</div>
+                                        <div class="dept-name">Electricity Board</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectRegisterDepartment('Transport Department')">
+                                        <div class="dept-icon">🚌</div>
+                                        <div class="dept-name">Transport Department</div>
+                                    </div>
+                                    <div class="dept-card" onclick="selectRegisterDepartment('Health Department')">
+                                        <div class="dept-icon">🏥</div>
+                                        <div class="dept-name">Health Department</div>
+                                    </div>
+                                </div>
+
+                                <form id="registerForm">
+                                    <input type="hidden" id="registerDepartment">
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="registerUsername">Username <span class="required">*</span></label>
+                                        <input type="text" id="registerUsername" class="form-control" placeholder="Choose a username" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="registerPassword">Password <span class="required">*</span></label>
+                                        <input type="password" id="registerPassword" class="form-control" placeholder="Choose a strong password" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="registerConfirmPassword">Confirm Password <span class="required">*</span></label>
+                                        <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Re-enter password" required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="registerEmail">Official Email <span class="required">*</span></label>
+                                        <input type="email" id="registerEmail" class="form-control" placeholder="official@department.gov" required>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary btn-block">Register Account</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 2: USER MODULE (Public Portal) -->
+            <div id="publicPage" class="page-section active">
+                <div class="page-title">
+                    <h1>Citizen Grievance Portal</h1>
+                    <p>Report public issues and track their resolution status through our transparent system</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Submit New Grievance</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="successMessage" class="success-message">
+                                Grievance submitted successfully!
+                            </div>
+                            
+                            <form id="problemForm">
+                                <div class="form-group">
+                                    <label class="form-label" for="title">Grievance Subject <span class="required">*</span></label>
+                                    <input type="text" id="title" class="form-control" placeholder="Brief description of the issue" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="description">Detailed Description <span class="required">*</span></label>
+                                    <textarea id="description" class="form-control" placeholder="Provide complete details of the grievance" required></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="location">Location <span class="required">*</span></label>
+                                    <input type="text" id="location" class="form-control" placeholder="Specific location or address" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="authority">Concerned Department <span class="required">*</span></label>
+                                    <select id="authority" class="form-control" required>
+                                        <option value="">Select Department</option>
+                                        <option value="Municipal Corporation">Municipal Corporation</option>
+                                        <option value="Police Department">Police Department</option>
+                                        <option value="Water Department">Water Supply Department</option>
+                                        <option value="Electricity Board">Electricity Board</option>
+                                        <option value="Transport Department">Transport Department</option>
+                                        <option value="Health Department">Health Department</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label" for="reporterName">Full Name <span class="required">*</span></label>
+                                        <input type="text" id="reporterName" class="form-control" placeholder="Your full name" required>
+                                        <div id="reporterNameError" class="error-message">Please enter alphabets only</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="reporterContact">Contact Information <span class="required">*</span></label>
+                                        <input type="text" id="reporterContact" class="form-control" placeholder="Phone number" required>
+                                        <div id="reporterContactError" class="error-message">Please enter numbers only</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="photoFile">Supporting Image (GPS Required) <span class="required">*</span></label>
+                                    <input type="file" id="photoFile" class="form-control" accept="image/*" required>
+                                    <small style="color: #6c757d; display: block; margin-top: 0.25rem;">Image must contain GPS location data</small>
+                                    <div id="photoFileError" class="error-message">Image must contain GPS location data</div>
+                                    <img id="imagePreview" style="display: none; max-width: 200px; margin-top: 0.5rem; border-radius: 4px;">
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>Submit Grievance</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>System Statistics</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-number" id="totalProblems">0</span>
+                                    <span class="stat-label">Total Grievances</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number" id="pendingProblems">0</span>
+                                    <span class="stat-label">Pending</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number" id="progressProblems">0</span>
+                                    <span class="stat-label">Under Review</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-number" id="resolvedProblems">0</span>
+                                    <span class="stat-label">Resolved</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Public Grievances</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="filter-bar">
+                            <div class="filter-group">
+                                <label class="filter-label">Filter by Status:</label>
+                                <select id="statusFilter" class="filter-select">
+                                    <option value="all">All Status</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">Under Review</option>
+                                    <option value="Resolved">Resolved</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Filter by Department:</label>
+                                <select id="authorityFilter" class="filter-select">
+                                    <option value="all">All Departments</option>
+                                    <option value="Municipal Corporation">Municipal Corporation</option>
+                                    <option value="Police Department">Police Department</option>
+                                    <option value="Water Department">Water Supply Department</option>
+                                    <option value="Electricity Board">Electricity Board</option>
+                                    <option value="Transport Department">Transport Department</option>
+                                    <option value="Health Department">Health Department</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="problemsList">
+                            <div class="no-data">
+                                No grievances reported yet. Be the first to submit a grievance to help improve public services.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: ADMIN MODULE -->
+            <div id="adminPage" class="page-section">
+                <div class="page-title">
+                    <h1 id="adminWelcome">Department Dashboard</h1>
+                    <p id="adminDeptInfo">Manage assigned grievances and updates</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <span class="stat-number" id="adminTotal">0</span>
+                        <span class="stat-label">Total Assigned</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="adminPending">0</span>
+                        <span class="stat-label">Pending</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="adminProgress">0</span>
+                        <span class="stat-label">Under Review</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="adminResolved">0</span>
+                        <span class="stat-label">Resolved</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Assigned Grievances</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="filter-bar">
+                            <div class="filter-group">
+                                <label class="filter-label">Filter by Status:</label>
+                                <select id="adminStatusFilter" class="filter-select">
+                                    <option value="all">All Status</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">Under Review</option>
+                                    <option value="Resolved">Resolved</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="adminProblemsList">
+                            <div class="no-data">No grievances assigned to your department.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+   <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<!-- Firebase Configuration -->
+<script>
+// Replace with YOUR Firebase config from Firebase Console
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+</script>
+
+<!-- Load JavaScript Modules in CORRECT ORDER -->
+<script src="report.js"></script>
+<script src="user.js"></script>
+<script src="admin.js"></script>
+<script src="login.js"></script>
+</body>
+</html>
