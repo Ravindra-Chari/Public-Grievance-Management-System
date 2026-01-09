@@ -1,119 +1,43 @@
 // ============================================
-// MODULE 4: REPORT & DATA MANAGEMENT MODULE (FIREBASE VERSION)
+// MODULE 4: REPORT & DATA MANAGEMENT MODULE
 // ============================================
 
-// Firebase references
-let problemsRef;
-let adminsRef;
-
-// Initialize Firebase references after DOM loads
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof firebase !== 'undefined') {
-        problemsRef = firebase.database().ref('problems');
-        adminsRef = firebase.database().ref('admins');
-        
-        // Initialize default admin if not exists
-        adminsRef.once('value').then(snapshot => {
-            if (!snapshot.exists()) {
-                const defaultAdmin = {
-                    username: 'admin',
-                    password: 'admin123',
-                    department: 'All',
-                    email: 'admin@gov.in'
-                };
-                adminsRef.push(defaultAdmin);
-            }
-        });
-        
-        // Listen for real-time updates
-        problemsRef.on('value', (snapshot) => {
-            updateStats();
-            renderProblems();
-            
-            const currentAdmin = getCurrentAdmin();
-            if (currentAdmin) {
-                updateAdminStats();
-                renderAdminProblems();
-            }
-        });
-        
-        initializeApp();
-    }
-});
-
-// Data Storage Functions (Firebase version)
+// Data Storage Functions (LocalStorage version - Firebase optional)
 function getProblems() {
-    return new Promise((resolve) => {
-        if (!problemsRef) {
-            resolve([]);
-            return;
-        }
-        
-        problemsRef.once('value').then((snapshot) => {
-            const problems = [];
-            snapshot.forEach((childSnapshot) => {
-                const problem = childSnapshot.val();
-                problem.firebaseId = childSnapshot.key;
-                problems.push(problem);
-            });
-            resolve(problems);
-        });
-    });
+    const problems = localStorage.getItem('problems');
+    return problems ? JSON.parse(problems) : [];
 }
 
 function saveProblems(problems) {
-    if (!problemsRef) return Promise.resolve();
-    
-    // Clear existing data
-    return problemsRef.remove().then(() => {
-        // Save all problems
-        const updates = {};
-        problems.forEach(problem => {
-            const key = problem.firebaseId || problemsRef.push().key;
-            updates[key] = problem;
-        });
-        return problemsRef.update(updates);
-    });
+    localStorage.setItem('problems', JSON.stringify(problems));
 }
 
 function addProblem(problem) {
-    if (!problemsRef) return Promise.resolve();
-    
-    return problemsRef.push(problem);
+    const problems = getProblems();
+    problems.push(problem);
+    saveProblems(problems);
 }
 
-function updateProblem(firebaseId, updates) {
-    if (!problemsRef) return Promise.resolve();
-    
-    return problemsRef.child(firebaseId).update(updates);
+function updateProblem(id, updates) {
+    const problems = getProblems();
+    const index = problems.findIndex(p => p.id === id);
+    if (index !== -1) {
+        problems[index] = { ...problems[index], ...updates };
+        saveProblems(problems);
+    }
 }
 
 function getAdmins() {
-    return new Promise((resolve) => {
-        if (!adminsRef) {
-            resolve([{ username: 'admin', password: 'admin123', department: 'All', email: 'admin@gov.in' }]);
-            return;
-        }
-        
-        adminsRef.once('value').then((snapshot) => {
-            const admins = [];
-            snapshot.forEach((childSnapshot) => {
-                admins.push(childSnapshot.val());
-            });
-            
-            if (admins.length === 0) {
-                admins.push({ username: 'admin', password: 'admin123', department: 'All', email: 'admin@gov.in' });
-            }
-            
-            resolve(admins);
-        });
-    });
+    const admins = localStorage.getItem('admins');
+    return admins ? JSON.parse(admins) : [
+        { username: 'admin', password: 'admin123', department: 'All', email: 'admin@gov.in' }
+    ];
 }
 
 function addAdmin(admin) {
-    if (!adminsRef) return Promise.resolve();
-    
-    return adminsRef.push(admin);
+    const admins = getAdmins();
+    admins.push(admin);
+    localStorage.setItem('admins', JSON.stringify(admins));
 }
 
 function getCurrentAdmin() {
@@ -121,8 +45,8 @@ function getCurrentAdmin() {
 }
 
 // Statistics Functions
-async function updateStats() {
-    const problems = await getProblems();
+function updateStats() {
+    const problems = getProblems();
     
     const totalEl = document.getElementById('totalProblems');
     const pendingEl = document.getElementById('pendingProblems');
@@ -152,7 +76,7 @@ function showPage(page) {
         if (publicPage) publicPage.classList.add('active');
         if (navBtns[0]) navBtns[0].classList.add('active');
         updateStats();
-        renderProblems();
+        if (typeof renderProblems === 'function') renderProblems();
     } else if (page === 'admin') {
         const currentAdmin = getCurrentAdmin();
         if (!currentAdmin) {
@@ -161,7 +85,7 @@ function showPage(page) {
         }
         const adminPage = document.getElementById('adminPage');
         if (adminPage) adminPage.classList.add('active');
-        loadAdminDashboard();
+        if (typeof loadAdminDashboard === 'function') loadAdminDashboard();
     } else if (page === 'auth') {
         const authPage = document.getElementById('authPage');
         if (authPage) authPage.classList.add('active');
@@ -178,12 +102,26 @@ function initializeApp() {
     }
     
     updateStats();
-    renderProblems();
+    if (typeof renderProblems === 'function') renderProblems();
+}
+
+// Update Nav for Logged In Admin
+function updateNavForLoggedInAdmin(admin) {
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const adminInfo = document.getElementById('adminInfo');
+    
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'inline-block';
+    if (adminInfo) {
+        adminInfo.style.display = 'inline-block';
+        adminInfo.textContent = `Logged in: ${admin.activeDepartment}`;
+    }
 }
 
 // Generate Reports
-async function generateReport(type) {
-    const problems = await getProblems();
+function generateReport(type) {
+    const problems = getProblems();
     
     let reportData = {
         generatedOn: new Date().toLocaleString(),
@@ -213,8 +151,8 @@ async function generateReport(type) {
 }
 
 // Export Functions
-async function exportToJSON() {
-    const problems = await getProblems();
+function exportToJSON() {
+    const problems = getProblems();
     const data = {
         problems: problems,
         exportDate: new Date().toISOString()
@@ -229,8 +167,8 @@ async function exportToJSON() {
     link.click();
 }
 
-async function exportToCSV() {
-    const problems = await getProblems();
+function exportToCSV() {
+    const problems = getProblems();
     
     const headers = ['ID', 'Title', 'Description', 'Location', 'Department', 'Status', 'Reporter', 'Contact', 'Date', 'Votes'];
     const rows = problems.map(p => [
@@ -262,12 +200,14 @@ async function exportToCSV() {
 function clearAllData() {
     if (confirm('Are you sure you want to clear ALL data? This cannot be undone.')) {
         if (confirm('This will delete all grievances. Continue?')) {
-            if (problemsRef) {
-                problemsRef.remove().then(() => {
-                    alert('All data has been cleared successfully.');
-                    window.location.reload();
-                });
-            }
+            localStorage.removeItem('problems');
+            alert('All data has been cleared successfully.');
+            window.location.reload();
         }
     }
 }
+
+// Initialize on DOM Load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+});
